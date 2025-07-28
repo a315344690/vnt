@@ -17,6 +17,26 @@ use crate::channel::sender::PacketSender;
 use crate::channel::socket::create_tcp0;
 use crate::channel::{ConnectProtocol, RouteKey, BUFFER_SIZE, TCP_MAX_PACKET_SIZE};
 use crate::util::StopManager;
+use crate::util::http_obfuscation::{skip_http_headers, is_http_request};
+
+/// 发送HTTP混淆请求
+async fn send_http_obfuscation(
+    stream: &mut TcpStream,
+    hostname: &str,
+) -> anyhow::Result<()> {
+    let http_request = format!(
+        "GET / HTTP/1.1\r\n\
+         Host: {}\r\n\
+         User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\r\n\
+         Accept: */*\r\n\
+         \r\n",
+        hostname
+    );
+    
+    stream.write_all(http_request.as_bytes()).await?;
+    tokio::time::sleep(Duration::from_millis(32)).await;
+    Ok(())
+}
 
 /// 监听tcp端口，等待客户端连接
 pub fn tcp_listen<H>(
@@ -112,6 +132,14 @@ where
         create_tcp0(addr.is_ipv4(), 0, context.default_interface())?
     };
     let mut stream = tokio::time::timeout(Duration::from_secs(3), socket.connect(addr)).await??;
+    
+    // 如果启用了HTTP混淆，发送HTTP请求
+    if let Some(hostname) = &context.fake_http_hostname {
+        if let Err(e) = send_http_obfuscation(&mut stream, hostname).await {
+            log::warn!("HTTP混淆发送失败: {:?}", e);
+        }
+    }
+    
     tcp_write(&mut stream, &data).await?;
 
     tcp_stream_handle(stream, addr, recv_handler, context).await;
@@ -136,7 +164,7 @@ where
 }
 
 pub async fn tcp_stream_handle<H>(
-    stream: TcpStream,
+    mut stream: TcpStream,
     addr: SocketAddr,
     recv_handler: H,
     context: ChannelContext,
@@ -144,6 +172,18 @@ pub async fn tcp_stream_handle<H>(
     H: RecvChannelHandler,
 {
     let _ = stream.set_nodelay(true);
+    
+    // 如果启用了HTTP混淆，检查并跳过HTTP头部
+    if context.fake_http_hostname.is_some() {
+        if is_http_request(&mut stream).await {
+            if let Err(e) = skip_http_headers(&mut stream).await {
+                log::warn!("跳过HTTP头部失败: {:?}, 地址: {}", e, addr);
+                return;
+            }
+            log::debug!("成功跳过HTTP头部，地址: {}", addr);
+        }
+    }
+    
     let local = stream.local_addr();
     #[cfg(windows)]
     let index = stream.as_raw_socket() as usize;
