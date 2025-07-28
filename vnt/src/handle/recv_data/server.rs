@@ -144,12 +144,21 @@ impl<Call: VntCallback, Device: DeviceWrite> PacketHandler for ServerPacketHandl
                 }
             }
             return Ok(());
-        } else if net_packet.protocol() == Protocol::Service
+        }         else if net_packet.protocol() == Protocol::Service
             && net_packet.transport_protocol() == service_packet::Protocol::HandshakeResponse.into()
         {
             let response = HandshakeResponse::parse_from_bytes(net_packet.payload())
                 .map_err(|e| anyhow!("HandshakeResponse {:?}", e))?;
             log::info!("握手响应:{:?},{}", route_key, response);
+            
+            // 处理HTTP混淆协商
+            if response.http_obfuscation_enabled {
+                if !response.http_hostname.is_empty() {
+                    context.set_fake_http_config(Some(response.http_hostname.clone()));
+                    log::info!("服务端启用HTTP混淆，域名: {}", response.http_hostname);
+                }
+            }
+            
             //设置为默认通道
             context.set_default_route_key(route_key);
             //如果开启了加密，则发送加密握手请求
