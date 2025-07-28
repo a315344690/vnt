@@ -49,6 +49,7 @@ pub struct FileConfig {
     // 允许传递wg流量
     pub allow_wire_guard: bool,
     pub local_dev: Option<String>,
+    pub fake_http_hostname: Option<String>,
 }
 
 impl Default for FileConfig {
@@ -95,6 +96,7 @@ impl Default for FileConfig {
             disable_stats: false,
             allow_wire_guard: false,
             local_dev: None,
+            fake_http_hostname: None,
         }
     }
 }
@@ -184,6 +186,7 @@ pub fn read_config(file_path: &str) -> anyhow::Result<(Config, Vec<String>, bool
         !file_conf.disable_stats,
         file_conf.allow_wire_guard,
         file_conf.local_dev,
+        file_conf.fake_http_hostname,
     )?;
 
     Ok((config, file_conf.vnt_mapping, file_conf.cmd))
