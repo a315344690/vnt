@@ -55,6 +55,7 @@ pub struct Config {
     pub allow_wire_guard: bool,
     pub local_ipv4: Option<Ipv4Addr>,
     pub local_interface: LocalInterface,
+    pub fake_http_hostname: Option<String>,
 }
 
 impl Config {
@@ -95,6 +96,7 @@ impl Config {
         // 允许传递wg流量
         allow_wire_guard: bool,
         local_dev: Option<String>,
+        fake_http_hostname: Option<String>,
     ) -> anyhow::Result<Self> {
         for x in stun_server.iter_mut() {
             if !x.contains(":") {
@@ -200,6 +202,7 @@ impl Config {
             allow_wire_guard,
             local_ipv4,
             local_interface,
+            fake_http_hostname,
         })
     }
 }
