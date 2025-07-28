@@ -45,20 +45,26 @@ impl Handshake {
         if last.elapsed() < Duration::from_secs(3) {
             return Ok(());
         }
-        let request_packet = self.handshake_request_packet(secret)?;
+        let request_packet = self.handshake_request_packet(secret, context)?;
         log::info!("发送握手请求,secret={},{:?}", secret, addr);
         context.send_default(&request_packet, addr)?;
         self.time.store(Instant::now());
         Ok(())
     }
     /// 第一次握手数据
-    pub fn handshake_request_packet(&self, secret: bool) -> io::Result<NetPacket<Vec<u8>>> {
+    pub fn handshake_request_packet(&self, secret: bool, context: &ChannelContext) -> io::Result<NetPacket<Vec<u8>>> {
         let mut request = HandshakeRequest::new();
         request.secret = secret;
         request.version = crate::VNT_VERSION.to_string();
         #[cfg(feature = "server_encrypt")]
         if let Some(finger) = self.rsa_cipher.lock().as_ref().map(|v| v.finger().clone()) {
             request.key_finger = finger;
+        }
+        
+        // 添加HTTP混淆支持
+        request.supports_http_obfuscation = true;
+        if let Some(hostname) = &context.fake_http_hostname {
+            request.http_hostname = hostname.clone();
         }
         let bytes = request.write_to_bytes().map_err(|e| {
             io::Error::new(
