@@ -191,6 +191,7 @@ impl VntInner {
             default_interface,
             up_traffic_meter.clone(),
             down_traffic_meter.clone(),
+            config.fake_http_hostname.clone(),
         )?;
         let local_ipv6 = nat::local_ipv6();
         let udp_ports = context.main_local_udp_port()?;
