@@ -140,7 +140,7 @@ fn check_gateway_channel<Call: VntCallback>(
         if let Err(e) = handshake.send(context, config.server_secret, current_device.connect_server)
         {
             log::warn!("{:?}", e);
-            let request_packet = handshake.handshake_request_packet(config.server_secret)?;
+            let request_packet = handshake.handshake_request_packet(config.server_secret, context)?;
             match connect_protocol {
                 ConnectProtocol::UDP => {}
                 ConnectProtocol::TCP => {
