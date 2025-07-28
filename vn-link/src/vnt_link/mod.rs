@@ -47,13 +47,20 @@ impl VnLink {
         let tcp_listener = LwIPTcpListener::new()?;
         let (shutdown_tx, shutdown_rx) = channel(false);
         let (net_stack_write, mut net_stack_read) = stack.into_split();
+        
+        #[cfg(feature = "integrated_tun")]
+        let vnt = Vnt::new(vnt_config, callback)?;
+        #[cfg(not(feature = "integrated_tun"))]
         let vnt = Vnt::new_device(vnt_config, callback, VntDevice { net_stack_write })?;
+        
         let shutdown_tx_ = shutdown_tx.clone();
         let w = vnt.add_stop_listener("vnt-link".into(), move || {
             let _ = shutdown_tx_.send(true);
         })?;
         let ip_sender = vnt.ipv4_packet_sender().unwrap();
         let mut shutdown_rx_ = shutdown_rx.clone();
+        
+        #[cfg(not(feature = "integrated_tun"))]
         tokio::spawn(async move {
             let mut extend = [0; BUFFER_SIZE];
             loop {
@@ -213,5 +220,10 @@ impl DeviceWrite for VntDevice {
     fn write(&self, buf: &[u8]) -> std::io::Result<usize> {
         self.net_stack_write.send_ip(buf)?;
         Ok(buf.len())
+    }
+    
+    #[cfg(feature = "integrated_tun")]
+    fn into_device_adapter(self) -> vnt::tun_create_helper::DeviceAdapter {
+        todo!("into_device_adapter not implemented for VntDevice")
     }
 }
