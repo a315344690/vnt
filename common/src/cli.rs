@@ -79,6 +79,7 @@ pub fn parse_args_config() -> anyhow::Result<Option<(Config, Vec<String>, bool)>
     opts.optopt("", "local-dev", "指定本地ipv4网卡名称", "<NAME>");
     opts.optflag("", "disable-stats", "关闭流量统计");
     opts.optflag("", "allow-wg", "允许接入WireGuard");
+    opts.optopt("", "fake-http", "HTTP协议混淆域名", "<hostname>");
     //"后台运行时,查看其他设备列表"
     opts.optflag("", "add", "后台运行时,添加地址");
     opts.optflag("", "list", "后台运行时,查看其他设备列表");
@@ -285,6 +286,7 @@ pub fn parse_args_config() -> anyhow::Result<Option<(Config, Vec<String>, bool)>
 
         let disable_stats = matches.opt_present("disable-stats");
         let allow_wire_guard = matches.opt_present("allow-wg");
+        let fake_http_hostname: Option<String> = matches.opt_get("fake-http").unwrap();
         let compressor = if let Some(compressor) = matches.opt_str("compressor").as_ref() {
             Compressor::from_str(compressor)
                 .map_err(|e| anyhow!("{}", e))
@@ -327,6 +329,7 @@ pub fn parse_args_config() -> anyhow::Result<Option<(Config, Vec<String>, bool)>
             !disable_stats,
             allow_wire_guard,
             local_dev,
+            fake_http_hostname,
         )?;
         (config, vnt_mapping_list, cmd)
     };
