@@ -84,9 +84,9 @@ jobs:
           
             if [  -n "$MUSL_URI" ]; then
               mkdir -p /opt/musl_gcc 
-              wget -c https://musl.cc/$MUSL_URI.tgz -P /opt/musl_gcc/
-              tar zxf /opt/musl_gcc/$MUSL_URI.tgz -C /opt/musl_gcc/
-              sudo ln -s /opt/musl_gcc/$MUSL_URI/bin/*gcc /usr/bin/
+              wget -c https://github.com/cross-tools/musl-cross/releases/download/20250520/aarch64-unknown-linux-musl.tar.xz -P /opt/musl_gcc/
+              tar xf /opt/musl_gcc/aarch64-unknown-linux-musl.tar.xz -C /opt/musl_gcc/
+              sudo ln -s /opt/musl_gcc/aarch64-unknown-linux-musl/bin/*gcc /usr/bin/
             fi
           fi
           
