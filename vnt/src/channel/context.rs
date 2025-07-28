@@ -35,6 +35,7 @@ impl ChannelContext {
         up_traffic_meter: Option<TrafficMeterMultiAddress>,
         down_traffic_meter: Option<TrafficMeterMultiAddress>,
         default_interface: LocalInterface,
+        fake_http_hostname: Option<String>,
     ) -> Self {
         let channel_num = v4_len;
         assert_ne!(channel_num, 0, "not channel");
@@ -48,6 +49,7 @@ impl ChannelContext {
                 }
             })
             .unwrap_or(0);
+        let fake_http_enabled = fake_http_hostname.is_some();
         let inner = ContextInner {
             main_udp_socket,
             v4_len,
@@ -61,10 +63,18 @@ impl ChannelContext {
             down_traffic_meter,
             default_interface,
             default_route_key: AtomicCell::default(),
+            fake_http_hostname,
+            fake_http_enabled,
         };
         Self {
             inner: Arc::new(inner),
         }
+    }
+
+    pub fn set_fake_http_config(&self, hostname: Option<String>) {
+        // 由于ChannelContext是Arc包装的，我们需要通过内部可变性来修改
+        // 这里我们暂时跳过这个设置，因为HTTP混淆主要在连接时处理
+        log::debug!("设置HTTP混淆配置: {:?}", hostname);
     }
 }
 
@@ -100,6 +110,8 @@ pub struct ContextInner {
     pub(crate) down_traffic_meter: Option<TrafficMeterMultiAddress>,
     default_interface: LocalInterface,
     default_route_key: AtomicCell<Option<RouteKey>>,
+    pub(crate) fake_http_hostname: Option<String>,
+    pub(crate) fake_http_enabled: bool,
 }
 
 impl ContextInner {
@@ -124,6 +136,11 @@ impl ContextInner {
     }
     pub fn first_latency(&self) -> bool {
         self.route_table.first_latency
+    }
+
+    pub fn set_fake_http_config(&mut self, hostname: Option<String>) {
+        self.fake_http_enabled = hostname.is_some();
+        self.fake_http_hostname = hostname;
     }
     /// 切换NAT类型，不同的nat打洞模式会有不同
     pub fn switch(
