@@ -4,12 +4,18 @@ message HandshakeRequest {
     string version = 1;
     bool secret = 2;
     string key_finger = 3;
+    // HTTP协议混淆支持
+    bool supports_http_obfuscation = 4;
+    string http_hostname = 5;
 }
 message HandshakeResponse {
     string version = 1;
     bool secret = 2;
     bytes public_key = 3;
     string key_finger = 4;
+    // HTTP协议混淆支持
+    bool http_obfuscation_enabled = 5;
+    string http_hostname = 6;
 }
 message SecretHandshakeRequest {
     string token = 1;
