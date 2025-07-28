@@ -206,6 +206,7 @@ pub(crate) fn init_context(
     default_interface: LocalInterface,
     up_traffic_meter: Option<TrafficMeterMultiAddress>,
     down_traffic_meter: Option<TrafficMeterMultiAddress>,
+    fake_http_hostname: Option<String>,
 ) -> anyhow::Result<(ChannelContext, std::net::TcpListener)> {
     assert!(!ports.is_empty(), "not channel");
     let mut main_udp_socket_v4 = Vec::with_capacity(ports.len());
@@ -246,6 +247,7 @@ pub(crate) fn init_context(
         up_traffic_meter,
         down_traffic_meter,
         default_interface,
+        fake_http_hostname,
     );
 
     let port = context.main_local_udp_port()?[0];
