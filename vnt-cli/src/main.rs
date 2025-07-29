@@ -38,6 +38,12 @@ fn main0(config: Config, _show_cmd: bool) {
             println!("UDP port mapping {}->{}", addr, dest)
         }
     }
+    
+    // 检查并打印fakehttp hostname
+    if let Some(hostname) = &config.fake_http_hostname {
+        println!("启用HTTP混淆，域名: {}", hostname);
+    }
+    
     let vnt_util = match Vnt::new(config, callback::VntHandler {}) {
         Ok(vnt) => vnt,
         Err(e) => {
