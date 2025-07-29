@@ -165,7 +165,7 @@ jobs:
       - name: List
         run: find ./artifacts
       - name: Create or update latest release
-        uses: svenstaro/upload-release-action@v4
+        uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ./artifacts/**/*.tar.gz
