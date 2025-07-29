@@ -33,6 +33,7 @@ pub struct VnLink {
         >,
     >,
     lwip_udp_write: UdpSocketWrite,
+    lwip_writer: Option<NetStackWrite>,
     shutdown_tx: Sender<bool>,
 }
 
@@ -48,10 +49,14 @@ impl VnLink {
         let (shutdown_tx, shutdown_rx) = channel(false);
         let (net_stack_write, mut net_stack_read) = stack.into_split();
         
-        #[cfg(feature = "integrated_tun")]
-        let vnt = Vnt::new(vnt_config, callback)?;
-        #[cfg(not(feature = "integrated_tun"))]
-        let vnt = Vnt::new_device(vnt_config, callback, VntDevice { net_stack_write })?;
+        // Create a custom device adapter for vn-link
+        let device = VntDevice {
+            net_stack_write: net_stack_write.clone(),
+        };
+        let vnt = Vnt::new_device(vnt_config, callback, device)?;
+        
+        // Store the lwip writer for our own packet forwarding needs
+        let lwip_writer = Some(net_stack_write);
         
         let shutdown_tx_ = shutdown_tx.clone();
         let w = vnt.add_stop_listener("vnt-link".into(), move || {
@@ -139,6 +144,7 @@ impl VnLink {
             vnt,
             in_udp_map,
             lwip_udp_write,
+            lwip_writer,
             shutdown_tx,
         };
         link.add_mapping(vn_link_config.mapping).await?;
@@ -222,8 +228,5 @@ impl DeviceWrite for VntDevice {
         Ok(buf.len())
     }
     
-    #[cfg(feature = "integrated_tun")]
-    fn into_device_adapter(self) -> vnt::tun_create_helper::DeviceAdapter {
-        todo!("into_device_adapter not implemented for VntDevice")
-    }
+
 }
