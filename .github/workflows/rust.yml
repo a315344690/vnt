@@ -65,6 +65,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ./target
+            /opt/musl_gcc
           key: build-cargo-registry-${{matrix.TARGET}}
 
       - name: List
@@ -83,10 +84,29 @@ jobs:
             esac
           
             if [  -n "$MUSL_URI" ]; then
-              mkdir -p /opt/musl_gcc 
-              wget -c https://github.com/cross-tools/musl-cross/releases/download/20250520/aarch64-unknown-linux-musl.tar.xz -P /opt/musl_gcc/
-              tar xf /opt/musl_gcc/aarch64-unknown-linux-musl.tar.xz -C /opt/musl_gcc/
-              sudo ln -s /opt/musl_gcc/aarch64-unknown-linux-musl/bin/*gcc /usr/bin/
+              # 检查是否已经缓存了工具链
+              if [ ! -d "/opt/musl_gcc/aarch64-linux-musl-cross" ]; then
+                mkdir -p /opt/musl_gcc 
+                echo "Downloading musl cross toolchain..."
+                # 使用 curl 替代 wget，设置超时和重试
+                curl -L --connect-timeout 30 --max-time 600 --retry 3 --retry-delay 5 \
+                  -o /opt/musl_gcc/aarch64-linux-musl-cross.tgz \
+                  https://musl.cc/aarch64-linux-musl-cross.tgz
+                
+                echo "Extracting musl cross toolchain..."
+                tar xf /opt/musl_gcc/aarch64-linux-musl-cross.tgz -C /opt/musl_gcc/
+                rm /opt/musl_gcc/aarch64-linux-musl-cross.tgz
+              else
+                echo "Using cached musl cross toolchain"
+              fi
+              
+              # 创建符号链接
+              sudo ln -sf /opt/musl_gcc/aarch64-linux-musl-cross/bin/*gcc /usr/bin/
+              
+              # 验证工具链安装
+              echo "Verifying musl cross toolchain installation..."
+              which aarch64-linux-musl-gcc || echo "Warning: aarch64-linux-musl-gcc not found in PATH"
+              ls -la /opt/musl_gcc/aarch64-linux-musl-cross/bin/ || echo "Warning: musl toolchain directory not found"
             fi
           fi
           
