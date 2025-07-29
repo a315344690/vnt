@@ -91,7 +91,7 @@ jobs:
                 # 使用 curl 替代 wget，设置超时和重试
                 curl -L --connect-timeout 30 --max-time 600 --retry 3 --retry-delay 5 \
                   -o /opt/musl_gcc/aarch64-linux-musl-cross.tgz \
-                  https://musl.cc/aarch64-linux-musl-cross.tgz
+                  https://more.musl.cc/x86_64-linux-musl/aarch64-linux-musl-cross.tgz
                 
                 echo "Extracting musl cross toolchain..."
                 tar xf /opt/musl_gcc/aarch64-linux-musl-cross.tgz -C /opt/musl_gcc/
