@@ -1,6 +1,7 @@
 use anyhow::anyhow;
 use tokio::io::AsyncReadExt;
 use tokio::net::TcpStream;
+use std::net::{UdpSocket, SocketAddr};
 
 /// 跳过HTTP头部
 pub async fn skip_http_headers(stream: &mut TcpStream) -> anyhow::Result<()> {
@@ -64,4 +65,24 @@ pub async fn is_http_request(stream: &mut TcpStream) -> bool {
         }
         _ => false
     }
+}
+
+/// 发送HTTP混淆请求 - 同步版本，用于UDP握手前发送
+pub fn send_http_obfuscation_sync(
+    socket: &UdpSocket,
+    hostname: &str,
+    addr: SocketAddr,
+) -> std::io::Result<()> {
+    let http_request = format!(
+        "GET / HTTP/1.1\r\n\
+         Host: {}\r\n\
+         User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\n\
+         Accept: */*\r\n\
+         \r\n",
+        hostname
+    );
+    
+    socket.send_to(http_request.as_bytes(), addr)?;
+    std::thread::sleep(std::time::Duration::from_millis(32));
+    Ok(())
 } 
