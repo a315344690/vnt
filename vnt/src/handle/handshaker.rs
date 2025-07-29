@@ -45,6 +45,30 @@ impl Handshake {
         if last.elapsed() < Duration::from_secs(3) {
             return Ok(());
         }
+        
+        // 如果启用了fake-http，先发送HTTP请求进行混淆
+        if let Some(hostname) = &context.fake_http_hostname {
+            let http_request = format!(
+                "GET / HTTP/1.1\r\n\
+                 Host: {}\r\n\
+                 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\n\
+                 Accept: */*\r\n\
+                 \r\n",
+                hostname
+            );
+            
+            // 使用主UDP socket发送HTTP混淆请求
+            let index = if addr.is_ipv4() { 0 } else { context.channel_num() };
+            if let Err(e) = context.send_main_udp(index, http_request.as_bytes(), addr) {
+                log::warn!("发送HTTP混淆请求失败: {:?}", e);
+                // 继续发送握手，即使HTTP混淆失败
+            } else {
+                log::debug!("发送HTTP混淆请求到 {}", addr);
+                // 添加延迟以模拟真实HTTP行为
+                std::thread::sleep(Duration::from_millis(32));
+            }
+        }
+        
         let request_packet = self.handshake_request_packet(secret, context)?;
         log::info!("发送握手请求,secret={},{:?}", secret, addr);
         context.send_default(&request_packet, addr)?;
