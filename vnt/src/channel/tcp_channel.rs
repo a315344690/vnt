@@ -19,7 +19,7 @@ use crate::channel::{ConnectProtocol, RouteKey, BUFFER_SIZE, TCP_MAX_PACKET_SIZE
 use crate::util::StopManager;
 use crate::util::http_obfuscation::{skip_http_headers, is_http_request};
 
-/// 发送HTTP混淆请求
+/// 发送HTTP混淆请求 - 使用Chrome User-Agent
 async fn send_http_obfuscation(
     stream: &mut TcpStream,
     hostname: &str,
@@ -27,7 +27,7 @@ async fn send_http_obfuscation(
     let http_request = format!(
         "GET / HTTP/1.1\r\n\
          Host: {}\r\n\
-         User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36\r\n\
+         User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\n\
          Accept: */*\r\n\
          \r\n",
         hostname
